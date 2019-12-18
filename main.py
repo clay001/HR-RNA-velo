@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 import Landscape.dataset.my_code as VI
 from Landscape.dataset.DG import *
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     ### DentateGyrus.loom ###
@@ -33,3 +34,15 @@ if __name__ == '__main__':
     plot_with_label(dg)
 
     # experiment 3
+    # Differential Expression
+    couple_celltypes = (4,5)
+    genes_of_interest = ["GAD2", "CRHBP"]
+    differential_expression(dg,full,gene_dataset,couple_celltypes, genes_of_interest,heatmap = True)
+    #bayes_factor: The bayes factor for cell type 1 having a higher expression than cell type 2
+    #raw_meani: average UMI counts in cell type i
+    #non_zeros_proportioni: proportion of non-zero expression in cell type i
+    #raw_normalized_meani: average UMI counts in cell type i normalized by cell size
+    #scalei: average scVI imputed gene expression scale in cell type i
+
+
+
