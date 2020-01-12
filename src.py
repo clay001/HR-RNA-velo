@@ -100,6 +100,8 @@ def LDVAE_train(adata ,cells_dataset,save_path, pkl_name,n_epochs = 50):
                                          columns=[f'latent_{i}' for i in range(10)])
     return adata,trainer,loadings
 
+
+
 def show_latent_space(adata):
     plt.figure(figsize=(12, 8))
     for f in range(0, 9, 2):
