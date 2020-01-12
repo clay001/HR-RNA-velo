@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
-import Landscape.dataset.my_code as VI
-from Landscape.dataset.DG import *
+import src as VI
+from DG import *
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':

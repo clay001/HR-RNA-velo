@@ -1,9 +1,9 @@
 import sys
 
-sys.path.append('/Users/wangxin/PycharmProjects/Landscape/Landscape/dataset/')
+sys.path.append('/Users/wangxin/PycharmProjects/Landscape/Landscape/VeloLand/')
 import numpy as np
 import matplotlib.pyplot as plt
-import Landscape.dataset.v as v
+import VeloLand.velocity_estimation as v
 import pickle
 import os
 import scanpy as sc
@@ -24,6 +24,7 @@ def plot_with_label(dg):
 
 
 def preprocess(save_path, file_name, pickle_name, latent):
+    print("Loading Data ...")
     dg = v.VelocytoLoom(save_path + file_name)
     colors_dict = {'RadialGlia': np.array([0.95, 0.6, 0.1]), 'RadialGlia2': np.array([0.85, 0.3, 0.1]),
                    'ImmAstro': np.array([0.8, 0.02, 0.1]),
@@ -37,13 +38,15 @@ def preprocess(save_path, file_name, pickle_name, latent):
 
     # add cluster_labels, colorandum, cluster_ix, cluster_uid
     dg.set_clusters(dg.ca["ClusterName"], cluster_colors_dict=colors_dict)
-
+    
+    print("Filtering cells ...")
     # remove cells
     bool_sift = dg.initial_Ucell_size > np.percentile(dg.initial_Ucell_size, 0.4)
     dg.filter_cells(bool_array=dg.initial_Ucell_size > np.percentile(dg.initial_Ucell_size, 0.4))
     dg.ts = np.column_stack([dg.ca["TSNE1"], dg.ca["TSNE2"]])
     # 18140 cells now
-
+    
+    print("Filtering genes ...")
     # create detection_level_selected(bool)
     dg.score_detection_levels(min_expr_counts=40, min_cells_express=30)
     # filter
@@ -54,25 +57,41 @@ def preprocess(save_path, file_name, pickle_name, latent):
     dg.score_cv_vs_mean(3000, plot=True, max_expr_avg=35)
     # figure 1
     plt.show()
+    if not os.path.exists("./figures"):
+        os.makedirs("./figures")
+    plt.savefig("./figures/DG_SVR.pdf")
+    print("DG_SVR.pdf has already been generated in figures folder.")
+    
     # filter
     dg.filter_genes(by_cv_vs_mean=True)
     # 3001 genes now
 
     # create detection_level_selected(bool)
-    dg.score_detection_levels(min_expr_counts=40, min_cells_express=30, min_expr_counts_U=25, min_cells_express_U=20)
-    # create clu_avg_selected(bool)
-    dg.score_cluster_expression(min_avg_U=0.01, min_avg_S=0.08)
-    dg.filter_genes(by_detection_levels=True, by_cluster_expression=True)
-    # 2159 genes now
+    # dg.score_detection_levels(min_expr_counts=40, min_cells_express=30, min_expr_counts_U=25, min_cells_express_U=20)
+    # # create clu_avg_selected(bool)
+    # dg.score_cluster_expression(min_avg_U=0.01, min_avg_S=0.08)
+    # dg.filter_genes(by_detection_levels=True, by_cluster_expression=True)
 
     # similar to "both", create U_norm, S_norm
-    dg._normalize_S(relative_size=dg.S.sum(0),
-                    target_size=np.mean(dg.S.sum(0)))
-    dg._normalize_U(relative_size=dg.U.sum(0),
-                    target_size=np.mean(dg.U.sum(0)))
+    # dg._normalize_S(relative_size=dg.S.sum(0),
+    #                 target_size=np.mean(dg.S.sum(0)))
+    # dg._normalize_U(relative_size=dg.U.sum(0),
+    #                 target_size=np.mean(dg.U.sum(0)))
+    dg.normalize("both", size=True, log=True)
 
     # figure 2
+    dg.plot_fractions()
+    if not os.path.exists("./figures"):
+        os.makedirs("./figures")
+    plt.savefig("./figures/DG_fractions.pdf")
+    print("Show fractions ... \nDG_fractions.pdf has already been generated in figures folder.")
+    
+    # figure 3
     plot_with_label(dg)
+    if not os.path.exists("./figures"):
+        os.makedirs("./figures")
+    plt.savefig("./figures/DG_label.pdf")
+    print("DG_label.pdf has already been generated in figures folder.")
 
     if os.path.isfile(save_path + pickle_name):
         # pickle load ls
@@ -81,24 +100,25 @@ def preprocess(save_path, file_name, pickle_name, latent):
             dg.ls = np.array(latent)
     else:
         dg.ls = latent
-
+    
     dg.ls = dg.ls[bool_sift]
     return dg, bool_sift
 
 
-def knn_imputation(dg):
+def knn_imputation(dg, k=500, assumption="constant_velocity"):
     # knn_imputation
-    k = 500
-    dg.knn_imputation_VI(k=k, balanced=True, b_sight=k * 8, b_maxl=k * 4, n_jobs=16)
+    print("Start KNN pooling with k =", k)
+    dg.knn_imputation_VI(n_pca_dims=n_comps，k=k, balanced=True, b_sight=k * 8, b_maxl=k * 4, n_jobs=16)
+    
+    print("Predict with ", assumption, "assumption ... ")
     # Fit gamma using spliced and unspliced data
     dg.fit_gammas(limit_gamma=False, fit_offset=False)
-
     # gamma model fit new feature： Upred = gamma * S
     dg.predict_U()
     # U measured 减去 predict
     dg.calculate_velocity()
     # 新特征 delta_S (np.ndarray) – The variation in gene expression
-    dg.calculate_shift(assumption="constant_velocity")
+    dg.calculate_shift(assumption=assumption)
     # Sx_sz_t (np.ndarray) – the extrapolated expression profile
     # used_delta_t (float) – stores delta_t for future usage
     dg.extrapolate_cell_at_t(delta_t=1.)
@@ -106,6 +126,7 @@ def knn_imputation(dg):
 
 def transition_compute(dg):
     # transition matrix
+    print("Start estimate transition prob on")
     dg.estimate_transition_prob(hidim="Sx_sz", embed="embedding", transform="sqrt", psc=1,
                                 n_neighbors=2000, knn_random=True, sampled_fraction=0.5)
     # 投影方向

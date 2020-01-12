@@ -1,5 +1,5 @@
 import argparse
-import my_code as VI
+import src as VI
 import warnings
 import torch
 import numpy as np
