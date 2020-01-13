@@ -27,13 +27,13 @@ save_path = "./data"
 n_epochs_all = None
 
 print("### Data Loading ...")
-gene_dataset = VI.data_loading(save_path, file_name = filename)
+gene_dataset = VI.data_loading(save_path, file_name=filename)
 
 print("### Start training")
-full,latent,trainer = VI.train(gene_dataset,save_path =save_path,pkl_name=output,
-                               latent_name =output,show_plot=p,use_batches=use_batches,n_epochs=n_epochs,lr=lr,
-                               use_cuda = use_cuda)
+full, latent, trainer = VI.train(gene_dataset, save_path=save_path, pkl_name=output,
+                               latent_name=output, show_plot=p, use_batches=use_batches, n_epochs=n_epochs, lr=lr,
+                               use_cuda=use_cuda)
 
-VI.plot_detail_loss(trainer,ymin=7000,ymax=8000)
+VI.plot_detail_loss(trainer, ymin=7000, ymax=8000)
 
 

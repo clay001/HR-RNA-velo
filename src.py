@@ -1,7 +1,7 @@
 import torch
 import anndata
 import numpy as np
-print("cuda available:",torch.cuda.is_available())
+print("cuda available:", torch.cuda.is_available())
 
 from VeloLand.dataset import loom
 from VeloLand.models.vae import VAE
